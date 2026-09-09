@@ -1,4 +1,5 @@
 import * as THREE from '../vendor/three.module.js';
+import { createGalleryControls } from './gallery-controls.js';
 
 const TAU = Math.PI * 2;
 const clamp = THREE.MathUtils.clamp;
@@ -192,7 +193,7 @@ export function createGallery(container, photos, onSelect, reducedMotion) {
     reflection.scale.y=-.65; orbit.add(reflection); reflections.push(reflection);
   });
   let frame, running=true, inView=false, paused=reducedMotion, angle=.18, targetAngle=.18, time=0, previous;
-  let dragging=false, dragged=false, startX=0, startY=0, startAngle=0, activePointer=null;
+  let dragging=false;
   const raycaster=new THREE.Raycaster(), pointer=new THREE.Vector2();
   let width=1,height=1;
   function resize(){
@@ -233,28 +234,21 @@ export function createGallery(container, photos, onSelect, reducedMotion) {
   }
   const resizeObserver=new ResizeObserver(resize);resizeObserver.observe(container);
   const intersectionObserver=new IntersectionObserver(entries=>{inView=entries[0].isIntersecting;},{rootMargin:'80px'});intersectionObserver.observe(container);
-  function down(event){if(event.button!==0||activePointer!==null)return;activePointer=event.pointerId;startX=event.clientX;startY=event.clientY;startAngle=targetAngle;dragged=false;dragging=true;}
-  function move(event){
-    if(!dragging||event.pointerId!==activePointer)return;
-    const dx=event.clientX-startX,dy=event.clientY-startY;
-    if(!dragged&&Math.abs(dy)>Math.abs(dx)&&Math.abs(dy)>8){dragging=false;activePointer=null;return;}
-    if(Math.abs(dx)>6){dragged=true; if(!container.hasPointerCapture(event.pointerId))container.setPointerCapture(event.pointerId);targetAngle=startAngle+dx/width*TAU*.65;}
-  }
-  function up(event){
-    if(event.pointerId!==activePointer)return;
-    const wasDrag=dragged;dragging=false;activePointer=null;
-    if(container.hasPointerCapture(event.pointerId))container.releasePointerCapture(event.pointerId);
-    if(!wasDrag&&event.type==='pointerup'){
-      const bounds=container.getBoundingClientRect();pointer.set((event.clientX-bounds.left)/bounds.width*2-1,-(event.clientY-bounds.top)/bounds.height*2+1);
+  const navigation=createGalleryControls(container,{
+    stepAngle:TAU/columns,
+    onInteraction(active){dragging=active;},
+    onRotate(delta){targetAngle+=delta;},
+    onZoom(value){camera.zoom=value;camera.updateProjectionMatrix();draw(0);},
+    onSelect(clientX,clientY){
+      const bounds=container.getBoundingClientRect();pointer.set((clientX-bounds.left)/bounds.width*2-1,-(clientY-bounds.top)/bounds.height*2+1);
       raycaster.setFromCamera(pointer,camera);const hits=raycaster.intersectObjects(cards);if(hits.length)onSelect(hits[0].object.userData.index);
-    }
-  }
-  container.addEventListener('pointerdown',down);container.addEventListener('pointermove',move);window.addEventListener('pointerup',up);container.addEventListener('pointercancel',up);
+    },
+  });
   container.classList.add('has-webgl'); resize();frame=requestAnimationFrame(animate);
   return {
     currentIndex(){return cards.length?cards.reduce((best,card)=>card.position.z>best.position.z?card:best).userData.index:0;},
     step(direction){if(photos.length)targetAngle+=direction*TAU/columns;},
     setPaused(value){paused=value;},
-    dispose(){running=false;cancelAnimationFrame(frame);resizeObserver.disconnect();intersectionObserver.disconnect();container.removeEventListener('pointerdown',down);container.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);container.removeEventListener('pointercancel',up);container.classList.remove('has-webgl');disposeScene(scene,renderer);},
+    dispose(){running=false;cancelAnimationFrame(frame);resizeObserver.disconnect();intersectionObserver.disconnect();navigation.dispose();container.classList.remove('has-webgl');disposeScene(scene,renderer);},
   };
 }
