@@ -11,6 +11,10 @@ let introScene, gallery, scenes, introFrame, transitionTimer, introVersion=0, pa
 let selected=0;
 let photos=[], photoSignature=null, galleryVersion=0, refreshing=false;
 const dialog=document.getElementById('photo-dialog');
+const photoDescription=document.createElement('p');
+photoDescription.id='photo-description';
+photoDescription.hidden=true;
+document.getElementById('photo-title').insertAdjacentElement('afterend',photoDescription);
 const fallbackList=document.getElementById('fallback-photos');
 
 function openPhoto(index){
@@ -23,6 +27,10 @@ function openPhoto(index){
     img.onerror=()=>{content.replaceChildren(placeholder());};content.append(img);
   }else content.append(placeholder());
   document.getElementById('photo-title').textContent=photo.src?photo.caption:`${photo.caption} · Здесь будет ваша фотография`;
+  photoDescription.textContent=photo.description||'';
+  photoDescription.hidden=!photo.description;
+  dialog.classList.toggle('has-description',Boolean(photo.description));
+  dialog.scrollTop=0;
   dialog.showModal();
 }
 function placeholder(){const div=document.createElement('div');div.className='photo-placeholder';const symbol=document.createElement('span');symbol.textContent='♡';const text=document.createElement('p');text.textContent='Воспоминания, которые останутся с нами';div.append(symbol,text);return div;}

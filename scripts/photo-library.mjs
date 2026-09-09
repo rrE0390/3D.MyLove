@@ -1,4 +1,4 @@
-import { readdir } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import { extname } from 'node:path';
 
 const extensions = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avif', '.gif']);
@@ -17,5 +17,20 @@ export async function scanPhotos(root) {
     }
   }
   images.sort((a, b) => sort.compare(a.path, b.path));
-  return { photos: images.map((item, i) => ({ src: item.src, caption: `Наш момент ${String(i + 1).padStart(2, '0')}`, alt: `Наша фотография ${i + 1}` })) };
+  const photos = await Promise.all(images.map(async (item, i) => {
+    const defaultCaption = `Наш момент ${String(i + 1).padStart(2, '0')}`;
+    const textPath = item.path.slice(0, -extname(item.path).length) + '.txt';
+    let caption = defaultCaption, description = '';
+    try {
+      const textURL = new URL('./' + textPath.split('/').map(encodeURIComponent).join('/'), root);
+      const text = (await readFile(textURL, 'utf8')).replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
+      const lines = text.split('\n');
+      caption = lines[0].trim() || defaultCaption;
+      description = lines.slice(1).join('\n').trim();
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+    }
+    return { src: item.src, caption, description, alt: caption === defaultCaption ? `Наша фотография ${i + 1}` : caption };
+  }));
+  return { photos };
 }
