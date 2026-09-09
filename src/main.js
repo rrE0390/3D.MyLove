@@ -1,5 +1,6 @@
 import { startCounter } from './counter.js';
 import { loadPhotos } from './photos.js';
+import { createPhotoViewer } from './photo-viewer.js';
 
 startCounter();
 const intro=document.getElementById('intro');
@@ -11,6 +12,7 @@ let introScene, gallery, scenes, introFrame, transitionTimer, introVersion=0, pa
 let selected=0;
 let photos=[], photoSignature=null, galleryVersion=0, refreshing=false;
 const dialog=document.getElementById('photo-dialog');
+let photoViewer=null;
 const photoDescription=document.createElement('p');
 photoDescription.id='photo-description';
 photoDescription.hidden=true;
@@ -21,10 +23,12 @@ function openPhoto(index){
   if(!photos.length)return;
   selected=(index+photos.length)%photos.length;
   const photo=photos[selected], content=document.getElementById('photo-content');
+  photoViewer?.destroy();photoViewer=null;
   content.replaceChildren();
   if(photo.src){
-    const img=document.createElement('img');img.src=photo.src;img.alt=photo.alt;
-    img.onerror=()=>{content.replaceChildren(placeholder());};content.append(img);
+    photoViewer=createPhotoViewer(content,{src:photo.src,alt:photo.alt,onError(){
+      photoViewer?.destroy();photoViewer=null;content.replaceChildren(placeholder());
+    }});
   }else content.append(placeholder());
   document.getElementById('photo-title').textContent=photo.src?photo.caption:`${photo.caption} · Здесь будет ваша фотография`;
   photoDescription.textContent=photo.description||'';
@@ -50,8 +54,9 @@ document.getElementById('open-photo').disabled=photos.length<1;
 }
 document.getElementById('open-photo').addEventListener('click',()=>openPhoto(gallery?.currentIndex()??selected));
 document.getElementById('close-photo').addEventListener('click',()=>dialog.close());
+dialog.addEventListener('close',()=>{photoViewer?.destroy();photoViewer=null;});
 dialog.addEventListener('click',event=>{if(event.target===dialog){const b=dialog.getBoundingClientRect();if(event.clientX<b.left||event.clientX>b.right||event.clientY<b.top||event.clientY>b.bottom)dialog.close();}});
-dialog.addEventListener('keydown',event=>{if(event.key==='ArrowRight'||event.key==='ArrowLeft'){event.preventDefault();openPhoto(selected+(event.key==='ArrowRight'?1:-1));}});
+dialog.addEventListener('keydown',event=>{if(photoViewer?.handleKey(event))return;if(event.key==='ArrowRight'||event.key==='ArrowLeft'){event.preventDefault();openPhoto(selected+(event.key==='ArrowRight'?1:-1));}});
 
 function finishIntro(){
   const version=++introVersion;
