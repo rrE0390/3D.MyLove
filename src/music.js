@@ -17,6 +17,7 @@ export function createBackgroundMusic() {
   status.setAttribute('role', 'status');
   status.hidden = true;
   const buttons = [];
+  const automaticStart = new AbortController();
   let ready = false, wanted = false, pending = false, manuallyChosen = false, revision = 0;
 
   function sync(message = '') {
@@ -43,7 +44,7 @@ export function createBackgroundMusic() {
     sync();
     try {
       if (audio.error) audio.load();
-      // Keep play() inside the click handler: mobile browsers require a gesture.
+      // Try on entry; if blocked, retry synchronously inside a real user gesture.
       await audio.play();
       if (attempt !== revision) return;
       pending = false;
@@ -51,7 +52,8 @@ export function createBackgroundMusic() {
     } catch (error) {
       if (attempt !== revision) return;
       wanted = pending = false;
-      sync(error.name === 'NotAllowedError' ? 'Нажми «Включить музыку», чтобы разрешить звук.' : 'Музыка не загрузилась. Нажми ещё раз, чтобы повторить.');
+      if (error.name !== 'NotAllowedError') automaticStart.abort();
+      sync(error.name === 'NotAllowedError' ? 'Коснись страницы или нажми любую клавишу, чтобы зазвучала музыка.' : 'Музыка не загрузилась. Нажми ещё раз, чтобы повторить.');
     }
   }
   function makeButton(className = '') {
@@ -66,6 +68,7 @@ export function createBackgroundMusic() {
     button.append(icon, label);
     button.addEventListener('click', () => {
       manuallyChosen = true;
+      automaticStart.abort();
       if (wanted || !audio.paused) pause(); else void play();
     });
     buttons.push(button);
@@ -76,13 +79,18 @@ export function createBackgroundMusic() {
   const dialogButton = makeButton('dialog-music');
   dialogButton.hidden = true;
   document.getElementById('photo-dialog')?.append(dialogButton);
-  document.getElementById('skip-intro')?.addEventListener('click', () => {
-    if (!manuallyChosen && !wanted) void play();
-  });
-  audio.addEventListener('playing', () => { pending = false; wanted = true; sync(); });
+  function startOnInteraction(event) {
+    // The music controls handle their own action; never turn a first click into pause.
+    if (!event.isTrusted || event.target.closest?.('.music-toggle') || event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
+    if (ready && !manuallyChosen && !wanted && audio.paused) void play();
+  }
+  document.addEventListener('click', startOnInteraction, { capture: true, signal: automaticStart.signal });
+  document.addEventListener('keydown', startOnInteraction, { capture: true, signal: automaticStart.signal });
+  audio.addEventListener('playing', () => { automaticStart.abort(); pending = false; wanted = true; sync(); });
   audio.addEventListener('pause', () => { wanted = pending = false; sync(); });
   audio.addEventListener('waiting', () => { if (wanted) { pending = true; sync(); } });
   audio.addEventListener('error', () => {
+    automaticStart.abort();
     wanted = pending = false;
     sync('Не удалось прочитать музыку. Проверь файл или нажми ещё раз.');
   });
@@ -100,6 +108,7 @@ export function createBackgroundMusic() {
       audio.src = source.href;
       ready = true;
       panel.hidden = dialogButton.hidden = false;
+      void play();
     } catch (error) {
       console.warn('Фоновая музыка недоступна.', error);
     }
