@@ -1,4 +1,5 @@
 import * as THREE from '../vendor/three.module.js';
+import { positionGalleryCamera } from './gallery-camera.js';
 import { createGalleryControls } from './gallery-controls.js';
 
 const TAU = Math.PI * 2;
@@ -199,12 +200,7 @@ export function createGallery(container, photos, onSelect, reducedMotion) {
   function resize(){
     width=Math.max(1,container.clientWidth);height=Math.max(1,container.clientHeight);
     renderer.setSize(width,height);camera.aspect=width/height;
-    // Fit the complete orbit to BOTH axes, including portrait phones.
-    const halfFov=THREE.MathUtils.degToRad(camera.fov/2);
-    const sceneCenter=1+(rows-1)*1.15;
-    const sceneHalfHeight=Math.max(3.4,rows*1.2+1.4);
-    const distance=Math.max(13.5,6.0/(Math.tan(halfFov)*camera.aspect),sceneHalfHeight/Math.tan(halfFov));
-    camera.position.set(0,sceneCenter+distance*.4,distance);camera.lookAt(0,sceneCenter,0);camera.updateProjectionMatrix();
+    positionGalleryCamera(camera,width/height,rows);
     draw(0);
   }
   function draw(dt){
@@ -238,7 +234,7 @@ export function createGallery(container, photos, onSelect, reducedMotion) {
     stepAngle:TAU/columns,
     onInteraction(active){dragging=active;},
     onRotate(delta){targetAngle+=delta;},
-    onZoom(value){camera.zoom=value;camera.updateProjectionMatrix();draw(0);},
+    onZoom(value){camera.zoom=value;positionGalleryCamera(camera,width/height,rows);draw(0);},
     onSelect(clientX,clientY){
       const bounds=container.getBoundingClientRect();pointer.set((clientX-bounds.left)/bounds.width*2-1,-(clientY-bounds.top)/bounds.height*2+1);
       raycaster.setFromCamera(pointer,camera);const hits=raycaster.intersectObjects(cards);if(hits.length)onSelect(hits[0].object.userData.index);

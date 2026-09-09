@@ -1,4 +1,4 @@
-export function createBackgroundMusic() {
+export function createBackgroundMusic({ autostart = true } = {}) {
   const stylesheet = document.createElement('link');
   stylesheet.rel = 'stylesheet';
   stylesheet.href = new URL('./music.css', import.meta.url).href;
@@ -19,6 +19,7 @@ export function createBackgroundMusic() {
   const buttons = [];
   const automaticStart = new AbortController();
   let ready = false, wanted = false, pending = false, manuallyChosen = false, revision = 0;
+  let activated = autostart;
 
   function sync(message = '') {
     const playing = !audio.paused && !pending && !audio.error;
@@ -53,7 +54,9 @@ export function createBackgroundMusic() {
       if (attempt !== revision) return;
       wanted = pending = false;
       if (error.name !== 'NotAllowedError') automaticStart.abort();
-      sync(error.name === 'NotAllowedError' ? 'Коснись страницы или нажми любую клавишу, чтобы зазвучала музыка.' : 'Музыка не загрузилась. Нажми ещё раз, чтобы повторить.');
+      sync(error.name === 'NotAllowedError'
+        ? (autostart ? 'Коснись страницы или нажми любую клавишу, чтобы зазвучала музыка.' : 'Нажми «Включить музыку» или разреши звук в настройках браузера.')
+        : 'Музыка не загрузилась. Нажми ещё раз, чтобы повторить.');
     }
   }
   function makeButton(className = '') {
@@ -84,8 +87,10 @@ export function createBackgroundMusic() {
     if (!event.isTrusted || event.target.closest?.('.music-toggle') || event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
     if (ready && !manuallyChosen && !wanted && audio.paused) void play();
   }
-  document.addEventListener('click', startOnInteraction, { capture: true, signal: automaticStart.signal });
-  document.addEventListener('keydown', startOnInteraction, { capture: true, signal: automaticStart.signal });
+  if (autostart) {
+    document.addEventListener('click', startOnInteraction, { capture: true, signal: automaticStart.signal });
+    document.addEventListener('keydown', startOnInteraction, { capture: true, signal: automaticStart.signal });
+  }
   audio.addEventListener('playing', () => { automaticStart.abort(); pending = false; wanted = true; sync(); });
   audio.addEventListener('pause', () => { wanted = pending = false; sync(); });
   audio.addEventListener('waiting', () => { if (wanted) { pending = true; sync(); } });
@@ -96,9 +101,9 @@ export function createBackgroundMusic() {
   });
   sync();
 
-  void (async () => {
+  const loaded = (async () => {
     try {
-      const response = await fetch(new URL('../music-manifest.json', import.meta.url), { cache: 'no-store' });
+      const response = await fetch(new URL('../music-manifest.json', import.meta.url), { cache: 'no-store', signal: AbortSignal.timeout(8000) });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const manifest = await response.json();
       if (!manifest.src) return;
@@ -107,10 +112,18 @@ export function createBackgroundMusic() {
       if (source.origin !== base.origin || !source.pathname.startsWith(base.pathname)) throw new Error('Music must be a local site asset');
       audio.src = source.href;
       ready = true;
-      panel.hidden = dialogButton.hidden = false;
-      void play();
+      panel.hidden = dialogButton.hidden = !activated;
+      if (autostart) void play();
     } catch (error) {
       console.warn('Фоновая музыка недоступна.', error);
     }
   })();
+  return {
+    ready: loaded,
+    start() {
+      activated = true;
+      panel.hidden = dialogButton.hidden = !ready;
+      if (!manuallyChosen && !wanted) void play();
+    },
+  };
 }

@@ -2,6 +2,7 @@ import { startCounter } from './counter.js';
 import { loadPhotos } from './photos.js';
 import { createPhotoViewer } from './photo-viewer.js';
 import { createBackgroundMusic } from './music.js';
+import { createJourneyGate } from './journey-gate.js';
 
 startCounter();
 const intro=document.getElementById('intro');
@@ -11,6 +12,7 @@ const motion=matchMedia('(prefers-reduced-motion: reduce)');
 const progress=intro.querySelector('.intro-progress i');
 let introScene, gallery, scenes, introFrame, transitionTimer, introVersion=0, paused=motion.matches;
 let selected=0;
+let journeyStarted=false;
 let photos=[], photoSignature=null, galleryVersion=0, refreshing=false;
 const dialog=document.getElementById('photo-dialog');
 let photoViewer=null;
@@ -109,16 +111,20 @@ async function initGallery(){
   }catch(error){console.warn('Используется обычная галерея.',error);stage.querySelector('canvas')?.remove();document.getElementById('toggle-rotation').disabled=true;document.getElementById('gallery-hint').textContent=photos.length?'Листай наши моменты':'Здесь появятся наши фотографии';}
 }
 async function refreshPhotos(){
-  if(refreshing||document.hidden)return;refreshing=true;
+  if(!journeyStarted||refreshing||document.hidden)return;refreshing=true;
   try{
     const next=await loadPhotos(),signature=JSON.stringify(next);
     if(signature!==photoSignature){photoSignature=signature;photos=next;if(dialog.open)dialog.close();updatePhotoButtons();await initGallery();}
   }catch(error){console.warn('Список фотографий недоступен.',error);if(photoSignature===null){updatePhotoButtons();await initGallery();}}
   finally{refreshing=false;}
 }
-if(motion.matches){intro.hidden=true;}else playIntro();
-refreshPhotos();
+intro.hidden=true;
 setInterval(refreshPhotos,15000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshPhotos();});
-motion.addEventListener('change',()=>{if(motion.matches&&!intro.hidden)finishIntro();paused=motion.matches;gallery?.dispose();gallery=null;initGallery();syncPause();});
-createBackgroundMusic();
+motion.addEventListener('change',()=>{if(!journeyStarted)return;if(motion.matches&&!intro.hidden)finishIntro();paused=motion.matches;gallery?.dispose();gallery=null;initGallery();syncPause();});
+const music=createBackgroundMusic({autostart:false});
+createJourneyGate({music,reducedMotion:motion,onStart(){
+  journeyStarted=true;
+  playIntro();
+  refreshPhotos();
+}});
