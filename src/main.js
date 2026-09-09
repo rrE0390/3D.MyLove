@@ -1,6 +1,7 @@
 import { startCounter } from './counter.js';
 import { loadPhotos } from './photos.js';
 import { createPhotoViewer } from './photo-viewer.js';
+import { createBackgroundMusic } from './music.js';
 
 startCounter();
 const intro=document.getElementById('intro');
@@ -120,3 +121,4 @@ refreshPhotos();
 setInterval(refreshPhotos,15000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshPhotos();});
 motion.addEventListener('change',()=>{if(motion.matches&&!intro.hidden)finishIntro();paused=motion.matches;gallery?.dispose();gallery=null;initGallery();syncPause();});
+createBackgroundMusic();
