@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#080d16">
+  <meta name="description" content="Для Лизы. Наша история, которая становится больше с каждой секундой.">
+  <title>Для Лизы · Наша маленькая вселенная</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="sky" aria-hidden="true"></div>
+  <section class="intro" id="intro" aria-label="Сердце из звёзд">
+    <div class="intro-top"><span class="wordmark">Лиза<span>♡</span></span><button id="skip-intro" class="text-button">К нашей истории <span aria-hidden="true">↗</span></button></div>
+    <div id="intro-canvas" class="intro-canvas" aria-hidden="true"><div class="intro-fallback">♡</div></div>
+    <div class="intro-copy"><p class="eyebrow">ИЗ МИЛЛИАРДОВ ЗВЁЗД</p><h1>Я выбрал <em>тебя.</em></h1><p>И выбираю каждый день.</p></div>
+    <div class="intro-bottom"><span>13.02.2026</span><div class="intro-progress"><i></i></div><span>НАЧАЛО НАС</span></div>
+  </section>
+
+  <div id="page" class="page">
+    <header class="header container">
+      <a href="#together" class="wordmark" aria-label="Для Лизы — к счётчику">Лиза<span>♡</span></a>
+      <span class="header-note">ОДНА МАЛЕНЬКАЯ ВСЕЛЕННАЯ НА ДВОИХ</span>
+      <button class="text-button" id="replay-intro"><span aria-hidden="true">↺</span> В самое начало</button>
+    </header>
+
+    <main class="container">
+      <section id="together" class="together" aria-labelledby="together-title">
+        <p class="eyebrow"><span class="live-dot" aria-hidden="true"></span> НАША ИСТОРИЯ ПРОДОЛЖАЕТСЯ</p>
+        <h2 id="together-title">Всё началось <em>с тебя.</em></h2>
+        <p class="lead">И с тех пор у каждого мгновения есть особенный смысл.</p>
+        <div class="counter-heading"><span></span><p>МЫ ВМЕСТЕ УЖЕ</p><span></span></div>
+        <div class="counter" role="timer" aria-label="Время вместе с 13 февраля 2026 года" aria-live="off">
+          <div class="time-unit"><span id="months" class="number">00</span><span class="unit" id="months-label">месяцев</span></div>
+          <span class="separator" aria-hidden="true">:</span>
+          <div class="time-unit"><span id="days" class="number">00</span><span class="unit" id="days-label">дней</span></div>
+          <span class="separator" aria-hidden="true">:</span>
+          <div class="time-unit"><span id="hours" class="number">00</span><span class="unit" id="hours-label">часов</span></div>
+          <span class="separator" aria-hidden="true">:</span>
+          <div class="time-unit"><span id="minutes" class="number">00</span><span class="unit" id="minutes-label">минут</span></div>
+          <span class="separator" aria-hidden="true">:</span>
+          <div class="time-unit"><span id="seconds" class="number">00</span><span class="unit" id="seconds-label">секунд</span></div>
+        </div>
+        <p class="since">С того самого <time datetime="2026-02-13T23:46:22+08:00">13 февраля 2026</time> <span aria-hidden="true">♡</span></p>
+        <a class="scroll-link" href="#memories">А сколько всего ещё впереди <span aria-hidden="true">↓</span></a>
+      </section>
+
+      <section class="memories" id="memories" aria-labelledby="memories-title">
+        <div class="section-heading"><div><p class="eyebrow">МЕСТО ДЛЯ НАШИХ МОМЕНТОВ</p><h2 id="memories-title">Вокруг тебя — <em>мой мир.</em></h2></div><span class="orbit-mark" aria-hidden="true">✧</span></div>
+        <div class="gallery-shell">
+          <div class="gallery-top"><span><i class="live-dot" aria-hidden="true"></i> НАША МАЛЕНЬКАЯ ВСЕЛЕННАЯ</span><span class="gallery-count" id="gallery-count">ФОТОГРАФИИ</span></div>
+          <div class="gallery-stage" id="gallery-stage" role="region" aria-label="Объёмная галерея. Поворачивайте пальцем, мышью или кнопками под галереей.">
+            <div class="gallery-fallback" id="gallery-fallback"><span class="fallback-heart" aria-hidden="true">♥</span><div id="fallback-photos" class="fallback-photos"></div></div>
+          </div>
+          <div class="gallery-bottom"><p><span aria-hidden="true">↔</span> <span id="gallery-hint">Поверни наш мир</span></p><div class="gallery-controls"><button id="previous-photo" class="icon-button" aria-label="Предыдущая фотография">←</button><button id="toggle-rotation" class="icon-button" aria-label="Приостановить вращение" aria-pressed="false"><span id="rotation-icon" aria-hidden="true">Ⅱ</span></button><button id="open-photo" class="icon-button" aria-label="Открыть фотографию">⤢</button><button id="next-photo" class="icon-button" aria-label="Следующая фотография">→</button></div></div>
+        </div>
+        <div class="gallery-caption"><span class="small-heart" aria-hidden="true">♡</span><p>Любимые мгновения — рядом.<br><span>А ты всегда в самом центре.</span></p></div>
+      </section>
+    </main>
+    <footer class="footer container"><span>Только для тебя, Лиза.</span><span>С любовью <span aria-hidden="true">♡</span></span></footer>
+  </div>
+
+  <dialog id="photo-dialog" aria-labelledby="photo-title">
+    <button id="close-photo" class="icon-button close-photo" aria-label="Закрыть фотографию">×</button>
+    <div id="photo-content"></div><p id="photo-title"></p>
+  </dialog>
+  <noscript><style>.intro{display:none}</style><p class="noscript-note">Включи JavaScript, чтобы ожили сердце, фотографии и счётчик.</p></noscript>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
